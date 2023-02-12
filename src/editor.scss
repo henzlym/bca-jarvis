@@ -1,0 +1,149 @@
+:root {
+    --font-size-large: 32px;
+    --font-size-medium: 20px;
+    --card-padding-x: 15px;
+    --card-padding-y: 15px;
+    --color-green-700: #080;
+    --color-green: #0c6;
+    --color-orange: #fa3;
+    --color-orange-700: #C33300;
+    --color-red: #f33;
+    --color-red-700: #c00;
+}
+
+#wpwrap {
+    background-color: #f5f6fa;
+}
+
+#wpcontent {
+    padding-right: 20px;
+}
+
+#bca-jarvis-admin-page {
+    font-family: 'Open Sans', sans-serif;
+
+    .bca-jarvis-admin-page-title {
+        font-size: 18px;
+        text-transform: uppercase;
+    }
+}
+
+#bca-psi-root {
+    margin-top: 35px;
+}
+
+/** OPENAI DEFAULT STYLES **/
+@font-face {
+    font-family: "ColfaxAI";
+    src: url(https://cdn.openai.com/API/fonts/ColfaxAIRegular.woff2) format("woff2"),
+        url(https://cdn.openai.com/API/fonts/ColfaxAIRegular.woff) format("woff");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "ColfaxAI";
+    src: url(https://cdn.openai.com/API/fonts/ColfaxAIBold.woff2) format("woff2"),
+        url(https://cdn.openai.com/API/fonts/ColfaxAIBold.woff) format("woff");
+    font-weight: bold;
+    font-style: normal;
+}
+
+.main,
+.main input {
+    font-size: 16px;
+    line-height: 24px;
+    color: #353740;
+    font-family: "ColfaxAI", Helvetica, sans-serif;
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 60px;
+}
+
+.main .icon {
+    width: 34px;
+}
+
+.main h3 {
+    font-size: 32px;
+    line-height: 40px;
+    font-weight: bold;
+    color: #202123;
+    margin: 16px 0 40px;
+}
+
+.main form {
+    display: flex;
+    flex-direction: column;
+    width: 320px;
+}
+
+.main input[type="text"] {
+    padding: 12px 16px;
+    border: 1px solid #10a37f;
+    border-radius: 4px;
+    margin-bottom: 24px;
+    outline-color: #10a37f;
+}
+
+.main ::placeholder {
+    color: #8e8ea0;
+    opacity: 1;
+}
+
+.main input[type="submit"] {
+    padding: 12px 0;
+    color: #fff;
+    background-color: #10a37f;
+    border: none;
+    border-radius: 4px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.main .result {
+    font-weight: bold;
+    margin-top: 40px;
+}
+
+.news-crawler-sidebar{
+    padding: 16px;
+}
+.news-crawler-button{
+    width: 100%;
+    justify-content: center;
+}
+.crawled-articles{
+    word-break: break-all;
+}
+.crawled-article {
+    display: flex;
+    h3 {
+        margin-top: 0;
+        margin-bottom: 0;
+        text-transform: uppercase;
+
+    }
+    h3,a{
+        font-size: 12px;
+    }
+    h3,a{
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .crawled-article-categories li{
+        display: inline-block;
+        margin-right: 5px;
+        font-size: 10px;
+        color: #8e8ea0;
+        &:last-child{
+            margin-right: 0;
+        }
+    }
+}
