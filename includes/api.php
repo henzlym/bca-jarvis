@@ -105,7 +105,7 @@ function bca_jarvis_crawler($request)
     // error_log(print_r( $command,true));
     // exec($safe_cmd, $output, $return_var);    
     // error_log(print_r($output,true));
-    $response = wp_remote_get('http://127.0.0.1:5000/crawl?url=' . $url);
+    $response = wp_remote_get('https://thedailytokennews.com/crawler/crawl?url=' . $url);
     error_log(print_r($response, true));
 
     if (is_wp_error($response)) {
