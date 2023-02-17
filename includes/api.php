@@ -13,6 +13,10 @@ function bca_jarvis_rest_api_init()
         'methods' => 'GET',
         'callback' => 'bca_jarvis_crawler',
     ));
+    register_rest_route('jarvis/v1', '/feed', array(
+        'methods' => 'GET',
+        'callback' => 'bca_jarvis_feed',
+    ));
 }
 add_action('rest_api_init', 'bca_jarvis_rest_api_init', 10);
 
@@ -33,8 +37,10 @@ function openai_create_completion($request)
         return;
     }
 
+    $options = get_option( 'jarvis_options' );
+    $api_key = _get_object_property( $options, 'api_key', '' );
     $configuration = new Configuration(array(
-        'apiKey' => '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',
+        'apiKey' => sanitize_text_field( $api_key ),
     ));
     $openai = new OpenAI($configuration);
 
@@ -105,7 +111,7 @@ function bca_jarvis_crawler($request)
     // error_log(print_r( $command,true));
     // exec($safe_cmd, $output, $return_var);    
     // error_log(print_r($output,true));
-    $response = wp_remote_get('https://thedailytokennews.com/crawler/crawl?url=' . $url);
+    $response = wp_remote_get('https://web-crawler.herokuapp.com/crawl?url=' . $url);
     error_log(print_r($response, true));
 
     if (is_wp_error($response)) {
@@ -115,14 +121,34 @@ function bca_jarvis_crawler($request)
     $response = json_decode($response, true);
 
     $allowed_tags = '<h1><h2><h3><h4><h5><h6><p><strong><em><b><cite><span>';
-    $stripped_html = strip_tags($response['html'], $allowed_tags);
+    $stripped_html = strip_tags($response['article']['html'], $allowed_tags);
     $stripped_html = bca_jarvis_html_remove_class_attr($stripped_html);
     $response['html'] = $stripped_html;
-    $results['result'] = $response;
+    $results['result'] = $response['article'];
     error_log(print_r($results, true));
     return $results;
 }
+function bca_jarvis_feed( $request )
+{
+    $url = $request->get_param('url');
+    if (!$url) {
+        $response['error'] = array(
+            'message' => "Invalid url was given...",
+        );
+        http_response_code(500);
+        echo json_encode($response);
+        return;
+    }
+    
+    $response = wp_remote_get('https://web-crawler.herokuapp.com/feed?url=' . $url);
 
+    if (is_wp_error($response)) {
+        return $response->get_error_message();
+    }
+    $response = wp_remote_retrieve_body($response);
+    $response = json_decode($response, true);
+    return $response;
+}
 function bca_jarvis_html_remove_class_attr($html)
 {
     return preg_replace('/(<[^>]+) class=".*?"/i', '$1', $html);

@@ -168,7 +168,7 @@ function Sidebar() {
 
     const getArticles = () => {
         setIsFetching( true );
-        fetch(`https://thedailytokennews.com/crawler/feed?url=${siteUrl}`, {
+        fetch(`/wp-json/jarvis/v1/feed?url=${siteUrl}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

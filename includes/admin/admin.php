@@ -2,12 +2,16 @@
 // Exit if accessed directly.
 if (!defined('ABSPATH')) exit;
 
-if (!class_exists('__Prefix_Admin')) {
-    class __Prefix_Admin
+if (!class_exists('Jarvis_Prefix_Admin')) {
+    class Jarvis_Prefix_Admin
     {
 
         public $pages;
         public $current_page;
+        public $settings;
+        public $sections;
+        public $fields;
+        public $Jarvis_Admin_Callbacks;
         
         public function __construct()
         {
@@ -119,9 +123,20 @@ if (!class_exists('__Prefix_Admin')) {
             // add error/update messages
             settings_errors('__prefix_admin_notices');
 
-            include_once BCA_JARVIS_PATH . 'includes/pages/' . $this->current_page;
+            ?>
+            <div id="bca-jarvis-admin-page">
+                <h1 class="bca-jarvis-admin-page-title"><?php echo esc_html(get_admin_page_title()); ?></h1>
+                <form action="options.php" method="post">
+                    <?php
+                    settings_fields( 'jarvis' ); // output security fields for the registered setting "marketplace_settings"
+                    do_settings_sections( 'jarvis' ); // output setting sections and their fields
+                    submit_button('Save Settings'); // output save settings button
+                    ?>
+                </form>
+            </div>
+            <?php
         }
     }
 
-    new __Prefix_Admin;
+    new Jarvis_Prefix_Admin;
 }

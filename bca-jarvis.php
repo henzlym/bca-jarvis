@@ -19,4 +19,7 @@ define('BCA_JARVIS_PATH', plugin_dir_path( __FILE__ ) );
 define('BCA_JARVIS_URI', plugin_dir_url( __FILE__ ) );
 
 include_once BCA_JARVIS_PATH . '/includes/api.php';
-include_once BCA_JARVIS_PATH . '/includes/admin.php';
+include_once BCA_JARVIS_PATH . '/includes/admin/helpers.php';
+include_once BCA_JARVIS_PATH . '/includes/admin/callbacks.php';
+include_once BCA_JARVIS_PATH . '/includes/admin/admin.php';
+include_once BCA_JARVIS_PATH . '/includes/admin/settings.php';
