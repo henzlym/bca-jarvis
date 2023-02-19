@@ -3,7 +3,7 @@
  * Plugin Name: Blk Canvas - Jarvis
  * Plugin URI: [Insert the URL for the plugin's website here]
  * Description: A powerful and intuitive plugin that transforms the way you create content on your WordPress site.
- * Version: 1.0
+ * Version: 1.1
  * Author: [Insert the name of the author here]
  * Author URI: [Insert the URL for the author's website here]
  * License: GPL2
