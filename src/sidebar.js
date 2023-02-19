@@ -11,20 +11,6 @@ import { addQueryArgs } from '@wordpress/url';
 import "./editor.scss";
 import { convertToBlocks, createTerm, createTerms } from './helpers';
 
-async function processTags(article) {
-    let tags = article.tags;
-    let result = [];
-
-    for (let i = 0; i < tags.length; i++) {
-        let tag = tags[i];
-        let id = await createTerm('tags', tag.term).id;
-        result.push(id);
-    }
-
-    return result;
-}
-  
-
 function Article( article ) {
 
     const [isCrawling, setIsCrawling] = useState( false )
@@ -74,24 +60,19 @@ function Article( article ) {
             console.error('The article must have a non-empty category.');
         }
         
-        let categories = await createTerm( 'categories', article.category );
         let tags = article.tags.map( tag => tag.term );
-        
-        tags = await createTerms( 'tags', tags )
-        tags = tags.map( tag => tag.id )
-        
+
         const post = {
             title:article.title,
             content:convertToBlocks( crawledArticle.html ),
             excerpt:article.description,
             meta:{
                 'crawled_domain':get( crawledArticle, 'domain', '' ),
-                'crawled_keywords':get( crawledArticle, 'keywords', '' ),
+                'crawled_categories':article.category,
+                'crawled_tags':tags,
                 'crawled_summary':get( crawledArticle, 'summary', '' ),
                 'crawled_author':get( article, 'author', '' )
             },
-            tags:tags,
-            categories:[categories.id],
             status: "draft",
         }
         
