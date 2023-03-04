@@ -462,7 +462,7 @@ function _prompt_max_token_length($prompt)
         'prompt'  => $prompt
     ];
     
-    $token_response = wp_remote_post('http://127.0.0.1:5000/tokens', array(
+    $token_response = wp_remote_post('https://web-crawler.herokuapp.com/tokens', array(
         'body' => $body,
     ));
 
