@@ -6,35 +6,127 @@ function bca_jarvis_rest_api_init()
 {
     register_rest_route('openai/v1', '/create_completion', array(
         'methods' => 'POST',
-        'callback' => 'openai_create_completion',
+        'callback' => 'bca_jarvis_write',
+        'permission_callback' => '__return_true'
     ));
 
     register_rest_route('jarvis/v1', '/crawler', array(
         'methods' => 'GET',
         'callback' => 'bca_jarvis_crawler',
+        'permission_callback' => '__return_true'
     ));
     register_rest_route('jarvis/v1', '/feed', array(
         'methods' => 'GET',
         'callback' => 'bca_jarvis_feed',
+        'permission_callback' => '__return_true'
+    ));
+    register_rest_route('jarvis/v1', '/write', array(
+        'methods' => 'POST',
+        'callback' => 'bca_jarvis_write',
+        'permission_callback' => '__return_true'
+    ));
+    register_rest_route('jarvis/v1', '/seo', array(
+        'methods' => 'POST',
+        'callback' => 'bca_jarvis_seo',
+        'permission_callback' => '__return_true'
     ));
 }
 add_action('rest_api_init', 'bca_jarvis_rest_api_init', 10);
 
-function openai_create_completion($request)
+function bca_jarvis_seo($request)
+{
+    $response = array();
+    $attribute = $request->get_param('attribute');
+    $value = $request->get_param('value');
+    $value2 = $request->get_param('value2');
+    $value = $value ? $value : '';
+    $value2 = $value2 ? $value2 : false;
+
+    if (trim($value) === '') {
+        $response['error'] = array(
+            'message' => "No value was provided",
+        );
+        return $response;
+    }
+
+
+    $prompt = openai_rewrite_seo_prompt($attribute, $value, $value2);
+    $max_tokens = _prompt_max_token_length($prompt);
+    
+    // $response['keywords'] = _get_mock_content('keywords.txt');
+    // return $response;
+    $openai = openai_init();
+
+    if (!$openai) {
+        $response['error'] = array(
+            'message' => "OpenAI API key not configured, please follow instructions in README.md",
+        );
+        return $response;
+    }
+    
+    try {
+        $completion = $openai->create_completion(array(
+            'model' => "text-davinci-003",
+            'prompt' => $prompt,
+            'temperature' => 1,
+            'max_tokens' => $max_tokens,
+            'top_p' => 1,
+            'frequency_penalty' => 0,
+            'presence_penalty' => 0.0
+        ));
+        if (isset( $completion['choices'][0]['text'] )) {
+            $response['results'] = _transform_string_to_list($completion['choices'][0]['text']);
+        }
+    } catch (Exception $error) {
+        // Consider adjusting the error handling logic for your use case
+        if ($error->response) {
+            error_log($error->response->status . ' ' . $error->response->data);
+            $response['error'] = $error->response->data;
+        } else {
+            error_log('Error with OpenAI API request: ' . $error->message);
+            $response['error'] = array(
+                'message' => 'An error occurred during your request.',
+            );
+        }
+    }
+
+    return $response;
+}
+function bca_jarvis_write($request)
 {
     $response = array();
     $content = $request->get_param('content');
-    $title = $request->get_param('title');
-
     $content = $content ? $content : '';
-    $title = $title ? $title : '';
-    if (trim($content) === '' || trim($title) === '') {
+    
+    if (trim($content) === '') {
         $response['error'] = array(
             'message' => "No content/title was provided",
         );
-        http_response_code(400);
-        echo json_encode($response);
-        return;
+        return $response;
+    }
+
+
+    $prompt = openai_generate_article_prompt($content);
+
+    $body = [
+        'prompt'  => $prompt
+    ];
+    
+    $token_response = wp_remote_post('http://127.0.0.1:5000/tokens', array(
+        'body' => $body,
+    ));
+
+    if (is_wp_error($token_response)) {
+        return $token_response->get_error_message();
+    }
+    $token_response = wp_remote_retrieve_body($token_response);
+    $token_response = json_decode($token_response, true);
+    
+    $max_tokens = 2688;
+
+    if (is_array($token_response)) {
+        $prompt_content_token_count = count( $token_response );
+        $max_tokens = 4001 - $prompt_content_token_count;
     }
 
     $options = get_option( 'jarvis_options' );
@@ -48,50 +140,107 @@ function openai_create_completion($request)
         $response['error'] = array(
             'message' => "OpenAI API key not configured, please follow instructions in README.md",
         );
-        http_response_code(500);
-        echo json_encode($response);
-        return;
+        return $response;
     }
 
     try {
         $completion = $openai->create_completion(array(
             'model' => "text-davinci-003",
-            'prompt' => openai_generate_prompt($content, $title),
-            'temperature' => 0.9,
-            'max_tokens' => 2688,
+            'prompt' => $prompt,
+            'temperature' => 0.7,
+            'max_tokens' => $max_tokens,
             'top_p' => 1,
-            'frequency_penalty' => 0,
-            'presence_penalty' => 0.6
+            'frequency_penalty' => 0.5,
+            'presence_penalty' => 0.0
         ));
-        error_log(print_r($completion, true));
-        $response['result'] = $completion['choices'][0]['text'];
-        http_response_code(200);
+        if (isset( $completion['choices'][0]['text'] )) {
+            $response['result'] = _prepare_content($completion['choices'][0]['text']);
+            http_response_code(200);
+        }
     } catch (Exception $error) {
         // Consider adjusting the error handling logic for your use case
         if ($error->response) {
             error_log($error->response->status . ' ' . $error->response->data);
             $response['error'] = $error->response->data;
-            http_response_code($error->response->status);
         } else {
             error_log('Error with OpenAI API request: ' . $error->message);
             $response['error'] = array(
                 'message' => 'An error occurred during your request.',
             );
-            http_response_code(500);
         }
     }
 
-    echo json_encode($response);
+    return $response;
 }
-function openai_generate_prompt($content, $title)
+function openai_rewrite_seo_prompt($attribute, $value, $value2 = false)
+{
+    $value = ucfirst(strtolower($value));
+    if ($attribute=='keywords') {
+        $prompt = openai_rewrite_keywords_prompt($value);
+    } elseif ($attribute=='title'&&$value2) {
+        $prompt = openai_rewrite_title_prompt($value, $value2);
+    } elseif ($attribute=='description'&&$value2) {
+        $prompt = openai_rewrite_description_prompt($value, $value2);
+    } elseif ($attribute=='url'&&$value2) {
+        $prompt = openai_rewrite_url_prompt($value, $value2);
+    } else {
+        $prompt = false;
+    }
+    return $prompt;
+}
+function openai_rewrite_keywords_prompt($title)
+{
+    $title = ucfirst(strtolower($title));
+    $prompt = "Based on this article title create a list 5 focus keywords for SEO. Do not number the list.\n\Example:News\nCrypto News\nBitcoin News\nBusiness\n\nTitle:$title";
+    return $prompt;
+}
+function openai_rewrite_title_prompt($title, $keyword)
+{
+    $title = ucfirst(strtolower($title));
+    $keyword = ucfirst(strtolower($keyword));
+    $prompt = "List 5 different versions of this title. It must include 4 power words and the SEO keyword `$keyword`. Do not number the list.\n\nExample list:News title one\nNews title two\nNews title three\n\nTitle:$title";
+    return $prompt;
+}
+function openai_rewrite_description_prompt($title, $keyword)
+{
+    $title = ucfirst(strtolower($title));
+    $keyword = ucfirst(strtolower($keyword));
+    $prompt = "Based on this article title create 5 meta description for google search results. Include the SEO keyword `$keyword`. The description should be a maximum of 160 characters long. Do not number the list.\n\ntitle:$title";
+    return $prompt;
+}
+function openai_rewrite_url_prompt($url, $keyword)
+{
+    $keyword = ucfirst(strtolower($keyword));
+    $prompt = "Rewrite this slug. Create 5 versions. It must be lowercase. It must include the SEO keyword `$keyword`. Do not number the list. It should be shorter than 75 characters.\n\nExample slug:super-bowl-lvi-ads-expect-less-crypto-this-year\n\nslug:$url";
+    return $prompt;
+}
+function openai_generate_article_prompt($content)
 {
     $content = ucfirst(strtolower($content));
-    $prompt = "Rewrite this text in the writing style of a New York Times journalist.
-        ###
-        $content
-        ###
-    ";
+    $prompt = "Rewrite this article in the tone of a New York Times journalist. The article should be engaging. This article should contain headings wrapped in `h2` tags, create them. The article should be a minimum of 650 words long.\n\n###$content###\n\n";
     return $prompt;
+}
+function openai_summarize_prompt($content)
+{
+    $content = ucfirst(strtolower($content));
+    $prompt = "Please summarize the following text:$content";
+    return $prompt;
+}
+
+function openai_init()
+{
+    $options = get_option( 'jarvis_options' );
+    $api_key = _get_object_property( $options, 'api_key', '' );
+    $configuration = new Configuration(array(
+        'apiKey' => sanitize_text_field( $api_key ),
+    ));
+    $openai = new OpenAI($configuration);
+
+    if (!$configuration->apiKey) {
+        return false;
+    }
+    
+    return $openai;
 }
 
 function bca_jarvis_crawler($request)
@@ -105,14 +254,8 @@ function bca_jarvis_crawler($request)
         echo json_encode($response);
         return;
     }
-    // $command = "python3 " . BCA_JARVIS_PATH . "crawler-newspaper.py";
-    // $safe_cmd = escapeshellcmd($command);
-    error_log(print_r('Jarvis start....', true));
-    // error_log(print_r( $command,true));
-    // exec($safe_cmd, $output, $return_var);    
-    // error_log(print_r($output,true));
+
     $response = wp_remote_get('https://web-crawler.herokuapp.com/crawl?url=' . $url);
-    error_log(print_r($response, true));
 
     if (is_wp_error($response)) {
         return $response->get_error_message();
@@ -120,12 +263,20 @@ function bca_jarvis_crawler($request)
     $response = wp_remote_retrieve_body($response);
     $response = json_decode($response, true);
 
-    $allowed_tags = '<h1><h2><h3><h4><h5><h6><p><strong><em><b><cite><span>';
-    $stripped_html = strip_tags($response['article']['html'], $allowed_tags);
+    if (!isset( $response['article']['html'] ) || empty($response['article']['html']) ) {
+        $response['error'] = array(
+            'message' => "Content is either missing or malformed.",
+            'article' => $response
+        );
+        return $response;
+    }
+    
+    $html = $response['article']['html'];
+    $allowed_tags = array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'strong', 'em', 'b', 'cite', 'span', 'blockquote');
+    $stripped_html = _strip_tags_except($html, $allowed_tags);
     $stripped_html = bca_jarvis_html_remove_class_attr($stripped_html);
-    $response['html'] = $stripped_html;
+    $response['article']['html'] = $stripped_html;
     $results['result'] = $response['article'];
-    error_log(print_r($results, true));
     return $results;
 }
 function bca_jarvis_feed( $request )
@@ -263,4 +414,70 @@ if (!function_exists('bca_jarvis_register_taxonomy')) {
         register_taxonomy('crawled-content', array('post'), $args);
     }
     add_action('init', 'bca_jarvis_register_taxonomy', 0);
+}
+
+function _get_mock_content( $filename = null )
+{
+    if ($filename == null) {
+        $filename = BCA_JARVIS_PATH . '/src/test/test.txt';
+    } else {
+        $filename = BCA_JARVIS_PATH . '/src/test/' . $filename;
+    }
+
+    $contents = file_get_contents($filename);
+    if ($contents === false) {
+      throw new Exception("Could not read file '$filename'.");
+    }
+    return _prepare_content($contents);
+}
+function _prepare_content( $content )
+{
+    return trim( wpautop(_transform_headings($content)) );
+}
+function _transform_headings($text) {
+    $patterns = array('/##\s*(.*)\s*/', '/#\s*(.*)\s*/');
+    $replacements = array('<h2>$1</h2>', '<h2>$1</h2>');
+    return preg_replace($patterns, $replacements, $text);
+}
+function _transform_string_to_list($str) {
+    // Split the string into an array, using "\n" as the delimiter
+    $arr = explode("\n", $str);
+    
+    // Remove any numbers from each array element
+    foreach ($arr as &$element) {
+      $element = trim(preg_replace('/\d+\.|\d+\. /', '', $element));
+    }
+    
+    // Remove any empty elements
+    $arr = array_filter($arr);
+    
+    // Reset the array keys
+    $arr = array_values($arr);
+    
+    return $arr;
+}
+function _prompt_max_token_length($prompt)
+{
+    $body = [
+        'prompt'  => $prompt
+    ];
+    
+    $token_response = wp_remote_post('http://127.0.0.1:5000/tokens', array(
+        'body' => $body,
+    ));
+
+    if (is_wp_error($token_response)) {
+        return $token_response->get_error_message();
+    }
+    $token_response = wp_remote_retrieve_body($token_response);
+    $token_response = json_decode($token_response, true);
+    
+    $max_tokens = 2688;
+
+    if (is_array($token_response)) {
+        $prompt_content_token_count = count( $token_response );
+        $max_tokens = 4001 - $prompt_content_token_count;
+    }
+    
+    return $max_tokens;
 }

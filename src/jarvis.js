@@ -5,6 +5,9 @@ import {
 import { Button, PanelBody } from '@wordpress/components';
 import { Fragment, render, useEffect, useState } from '@wordpress/element';
 import { select } from '@wordpress/data'
+
+import './jarvis/sidebar';
+
 const withInspectorControls = createHigherOrderComponent( ( BlockEdit ) => {
     return ( props ) => {
         if (props.name !== 'core/paragraph') {
@@ -15,7 +18,6 @@ const withInspectorControls = createHigherOrderComponent( ( BlockEdit ) => {
         const { attributes:{ content }, setAttributes } = props;
         const postTitle = select('core/editor').getCurrentPostAttribute('title');
     
-        console.log( postTitle, props );
         const createCompletion = async () => {
             try {
                 setIsRewriting( true );
@@ -40,6 +42,7 @@ const withInspectorControls = createHigherOrderComponent( ( BlockEdit ) => {
                 alert(error.message);
             }
         }
+        
         return (
             <>
                 <BlockEdit { ...props } />

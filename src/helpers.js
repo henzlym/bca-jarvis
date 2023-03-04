@@ -16,7 +16,6 @@ export async function createTerm(taxonomy = 'categories', name, description = nu
 
     const category = await getTerm(taxonomy, name);
 
-    console.log(taxonomy, name, category);
     if (category.length !== 0) {
         return category;
     }
@@ -74,4 +73,24 @@ export async function getTerm(taxonomy = 'categories', nameOrSlug) {
 
 function convertToSlug(string) {
     return string.toLowerCase().replace(/\s/g, '-');
+}
+
+export const getSEOAudit = ( data, cb ) => {
+        
+    fetch("/wp-json/jarvis/v1/seo", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            'X-WP-Nonce': jarvisSettings.nonce
+        },
+        body: JSON.stringify(data)
+    })
+    .then( res => res.json() )
+    .then( data => {
+        cb( data );
+    })
+    .catch((error) => {
+      console.error('Error fetching data:', error);
+      // Handle the error here, e.g. display a user-friendly error message
+    });
 }

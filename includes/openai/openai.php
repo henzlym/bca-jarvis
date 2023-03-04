@@ -39,11 +39,11 @@ class OpenAI
         $data = array(
             "prompt" => $options['prompt'],
             "temperature" => $options['temperature'],
-            'model' => "text-davinci-003",
-            'max_tokens' => 2688,
-            'top_p' => 1,
-            'frequency_penalty' => 0,
-            'presence_penalty' => 0.6
+            'model' => $options['model'],
+            'max_tokens' => $options['max_tokens'],
+            'top_p' => $options['top_p'],
+            'frequency_penalty' => $options['frequency_penalty'],
+            'presence_penalty' => $options['presence_penalty']
         );
 
         $curl = curl_init();

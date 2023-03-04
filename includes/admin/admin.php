@@ -46,7 +46,8 @@ if (!class_exists('Jarvis_Prefix_Admin')) {
             
             if ($pagenow == 'post.php' && $typenow == 'post') {
                 $asset = include_once BCA_JARVIS_PATH . 'build/jarvis.asset.php';
-                wp_enqueue_script( 'jarvis-rewrite', BCA_JARVIS_URI . '/build/jarvis.js', $asset['dependencies'], $asset['version'], true );
+                wp_enqueue_style( 'jarvis-sidebar', BCA_JARVIS_URI . '/build/jarvis.css', [], $asset['version'] );
+                wp_enqueue_script( 'jarvis-rewrite', BCA_JARVIS_URI . '/build/jarvis.js', array_merge( $asset['dependencies'], ['rank-math-analyzer'] ), $asset['version'], true );
                 wp_localize_script( 'jarvis-rewrite', 'jarvisSettings', $js_data );
             }
             
