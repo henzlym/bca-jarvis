@@ -112,7 +112,7 @@ function bca_jarvis_write($request)
         'prompt'  => $prompt
     ];
     
-    $token_response = wp_remote_post('http://127.0.0.1:5000/tokens', array(
+    $token_response = wp_remote_post('https://web-crawler.herokuapp.com/tokens', array(
         'body' => $body,
     ));
 
